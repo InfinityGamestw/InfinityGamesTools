@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Infinity Games</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Gradient backgrounds */
+    .bg-gradient-blue-purple {
+      background: linear-gradient(135deg, #1e40af, #4b3c6e);
+    }
+
+    .bg-inner-gradient {
+      background: linear-gradient(135deg, #1a1e28, #2e2a4a);
+      border-radius: 0.5rem;
+    }
+
+    .bg-header {
+      background: linear-gradient(135deg, #1a1e28, #2e2a4a);
+    }
+
+    /* Custom scrollbar for drag-drop area */
+    #dropZone {
+      scrollbar-width: thin;
+      scrollbar-color: #2563eb #1e293b;
+    }
+    #dropZone::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    #dropZone::-webkit-scrollbar-thumb {
+      background-color: #2563eb;
+      border-radius: 6px;
+    }
+    #dropZone::-webkit-scrollbar-track {
+      background-color: #1e293b;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-blue-purple text-slate-100 font-sans min-h-screen flex items-center justify-center p-4">
+
+  <div class="w-full max-w-lg bg-inner-gradient rounded-lg shadow-lg flex flex-col select-none" style="height: 520px;">
+    <!-- Header -->
+    <header class="bg-header text-center py-4 rounded-t-lg">
+      <h1 class="text-2xl font-bold text-slate-200 mb-2">InfinityGames</h1>
+      <a href="https://discord.gg/MbMtQVb8Zu" target="_blank" rel="noopener noreferrer"
+         class="text-slate-200 font-semibold tracking-widest hover:text-blue-500 transition"
+         aria-label="Join the Infinity Games Discord server">
+        Https://discord.gg/InfinityGames
+      </a>
+    </header>
+
+    <!-- Drop Zone -->
+    <div id="dropZone"
+         class="flex-1 m-6 rounded-lg bg-slate-700 border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 text-lg cursor-pointer select-text transition-colors"
+         tabindex="0"
+         role="button"
+         aria-label="Drag and drop ZIP files here">
+      Drag &amp; Drop ZIP Files Here!
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="px-6">
+      <div class="relative h-3 w-full bg-slate-700 rounded overflow-hidden mb-1" aria-label="Progress bar">
+        <div id="progressBar" class="h-full bg-blue-600 transition-all duration-500" style="width: 0;"></div>
+      </div>
+      <div class="flex justify-between text-sm text-slate-400 mb-4 leading-none">
+        <div id="statusText">Ready.</div>
+        <div id="currentFileText">Current: None</div>
+      </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="px-6 space-y-3 mb-4">
+      <button id="addGameBtn"
+              class="w-full py-3 bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-500 rounded text-white font-semibold transition"
+              aria-label="Add game button">
+        Add Game
+      </button>
+      <button id="removeGameBtn"
+              class="w-full py-3 bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-500 rounded text-white font-semibold transition"
+              aria-label="Remove game button">
+        Remove Game
+      </button>
+      <button id="restartSteamBtn"
+              class="w-full py-3 bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-500 rounded text-white font-semibold transition"
+              aria-label="Restart Steam button">
+        Restart Steam
+      </button>
+    </div>
+
+    <!-- Path status -->
+    <footer class="text-center text-slate-400 text-sm pb-5 select-text" aria-live="polite" aria-atomic="true">
+      Path: <span id="pathText">None</span>
+    </footer>
+  </div>
+
+  <script>
+    // References
+    const dropZone = document.getElementById('dropZone');
+    const progressBar = document.getElementById('progressBar');
+    const statusText = document.getElementById('statusText');
+    const currentFileText = document.getElementById('currentFileText');
+    const pathText = document.getElementById('pathText');
+
+    let currentFile = null;
+    let progress = 0;
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+      }, false);
+    });
+
+    // Highlight drop zone on dragover
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.add('border-blue-500', 'text-blue-400');
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => {
+        dropZone.classList.remove('border-blue-500', 'text-blue-400');
+      }, false);
+    });
+
+    // Handle drop
+    dropZone.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      if (files.length === 0) {
+        statusText.textContent = 'No files dropped.';
+        return;
+      }
+      // Filter ZIP files
+      const zipFiles = Array.from(files).filter(file => file.name.toLowerCase().endsWith('.zip'));
+      if (zipFiles.length === 0) {
+        statusText.textContent = 'Please drop ZIP files only.';
+        return;
+      }
+      currentFile = zipFiles[0];
+      pathText.textContent = currentFile.name;
+      currentFileText.textContent = `Current: ${currentFile.name}`;
+      statusText.textContent = 'File loaded. Ready to add.';
+      progressBar.style.width = '0%';
+      progress = 0;
+    });
+
+    // Simulate adding game: just fake progress
+    document.getElementById('addGameBtn').addEventListener('click', () => {
+      if (!currentFile) {
+        statusText.textContent = 'No file loaded to add.';
+        return;
+      }
+      statusText.textContent = 'Adding game...';
+      progress = 0;
+      progressBar.style.width = '0%';
+      currentFileText.textContent = `Adding: ${currentFile.name}`;
+      let interval = setInterval(() => {
+        progress += 10;
+        progressBar.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(interval);
+          statusText.textContent = `Game "${currentFile.name}" added successfully.`;
+          currentFileText.textContent = 'Current: None';
+          pathText.textContent = 'None';
+          currentFile = null;
+        }
+      }, 300);
+    });
+
+    // Restart Steam button (simulation)
+    document.getElementById('restartSteamBtn').addEventListener('click', () => {
+      statusText.textContent = 'Restarting Steam...';
+      progress = 0;
+      progressBar.style.width = '0%';
+      currentFileText.textContent = 'Restarting Steam';
+      let interval = setInterval(() => {
+        progress += 20;
+        progressBar.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(interval);
+          statusText.textContent = 'Steam restarted successfully.';
+          currentFileText.textContent = 'Current: None';
+          pathText.textContent = 'None';
+          currentFile = null;
+        }
+      }, 400);
+    });
+
+    // Remove game button (simulation)
+    document.getElementById('removeGameBtn').addEventListener('click', () => {
+      if (!currentFile) {
+        statusText.textContent = 'No file loaded to remove.';
+        return;
+      }
+      statusText.textContent = `Removing game "${currentFile.name}"...`;
+      progress = 0;
+      progressBar.style.width = '0%';
+      currentFileText.textContent = `Removing: ${currentFile.name}`;
+      let interval = setInterval(() => {
+        progress += 15;
+        progressBar.style.width = progress + '%';
+        if (progress >= 100) {
+          clearInterval(interval);
+          statusText.textContent = `Game "${currentFile.name}" removed successfully.`;
+          currentFileText.textContent = 'Current: None';
+          pathText.textContent = 'None';
+          currentFile = null;
+        }
+      }, 300);
+    });
+  </script>
+</body>
+</html>
